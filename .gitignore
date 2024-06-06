@@ -1,0 +1,14 @@
+# Ignore executable files
+*.exe
+
+# Ignore text files
+*.txt
+
+# Ignore build directory
+build/
+
+# Ignore temporary files
+*.tmp
+
+# Ignore VSCode settings
+.vscode/
