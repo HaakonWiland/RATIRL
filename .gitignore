@@ -12,3 +12,6 @@ build/
 
 # Ignore VSCode settings
 .vscode/
+
+# Ignore .csv files
+*.csv
