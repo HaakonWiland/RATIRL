@@ -45,3 +45,13 @@ bool NetworkClient::connectToServer() {
     }
     return true;
 }
+
+
+bool NetworkClient::sendData(const std::string& data) {
+    int sendResult = send(sock, data.c_str(), data.size(), 0);
+    if (sendResult == SOCKET_ERROR) {
+        std::cerr << "Error sending data! \n";
+        return false;
+    }
+    return true;
+}

@@ -15,3 +15,6 @@ build/
 
 # Ignore .csv files
 *.csv
+
+# Ignore .o files 
+*.o

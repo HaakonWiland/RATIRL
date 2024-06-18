@@ -2,7 +2,7 @@
 CXX = g++
 
 # Compiler flags: C++ standard to C++11, Wall enable all warnings 
-CXXFLAGS = -std=c++11 -Wall
+CXXFLAGS = -std=c++11 -Wall 
 
 # Target executable 
 TARGET = keylogger.exe 
@@ -22,9 +22,12 @@ $(TARGET): $(OBJS)
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-# Clean target to remove obj files and executable
+# Clean target to remove obj files and executable. (NOTE Linux is different then Windows here)
 clean:
-	rm -f $(OBJS) $(TARGET)
+	del /f /q $(OBJS) $(TARGET)
+
+# Clean as phony to avoid conflicts with files named clean 
+.PHONY: clean
 
 
 
