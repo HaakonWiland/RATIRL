@@ -20,6 +20,12 @@ NetworkClient::~NetworkClient() {
 }
 
 bool NetworkClient::connectToServer() {
+    // Closing previously opened socket is closed. 
+    if (sock != INVALID_SOCKET) {
+        closesocket(sock);
+        sock = INVALID_SOCKET;
+    }
+
     // Creating a socket with AF_INET(IPv4) and sock_stream (as the server)
     sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock == INVALID_SOCKET) {
@@ -38,7 +44,7 @@ bool NetworkClient::connectToServer() {
 
     //  reinterpret_cast<const sockaddr*> (&serverAddr) typecasts the memory address of serverAddr to a "const sockaddr pointer".  
     if(connect(sock, reinterpret_cast<const sockaddr*> (&serverAddr), sizeof(serverAddr)) == SOCKET_ERROR) {
-        std::cerr << "Error connecting to server. \n";
+        //std::cerr << "Error connecting to server. \n";
         closesocket(sock);
         sock = INVALID_SOCKET;
         return false;
@@ -48,9 +54,15 @@ bool NetworkClient::connectToServer() {
 
 
 bool NetworkClient::sendData(const std::string& data) {
+    if (sock == INVALID_SOCKET) {
+        std::cerr << "Invalid socket, connection not established. \n";
+        return false;
+    }
+
     int sendResult = send(sock, data.c_str(), data.size(), 0);
     if (sendResult == SOCKET_ERROR) {
         std::cerr << "Error sending data! \n";
+        sock = INVALID_SOCKET;
         return false;
     }
     return true;
