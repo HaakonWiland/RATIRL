@@ -2,7 +2,7 @@
 CXX = g++
 
 # Compiler flags: C++ standard to C++11, Wall enable all warnings 
-CXXFLAGS = -std=c++11 -Wall 
+CXXFLAGS = -std=c++20 -Wall 
 
 # Target executable 
 TARGET = keylogger.exe 
