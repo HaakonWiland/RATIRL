@@ -10,7 +10,7 @@ class NetworkClient {
     NetworkClient(const std::string& serverIp, int serverPort);
     ~NetworkClient();
     bool connectToServer();
-    bool sendData(const std::string& data); //Consider having this as a const char*
+    bool sendData(const std::string& data); 
 
     private:
     std::string serverIp;

